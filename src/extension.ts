@@ -19,7 +19,7 @@ import { isTruthy } from "./TsUtils";
 import { registerChangelistSearch } from "./search/ChangelistTreeView";
 import { createSpecEditor } from "./SpecEditor";
 import { clearAllMementos } from "./MementoItem";
-
+import { TimeLineProvider } from "./Timeline";
 let _isRegistered = false;
 const _disposable: vscode.Disposable[] = [];
 let _perforceContentProvider: PerforceFileSystemProvider | undefined;
@@ -519,6 +519,12 @@ export async function activate(ctx: vscode.ExtensionContext) {
 
     // don't get events for these when the editor first loads
     vscode.workspace.textDocuments.map(onDidOpenTextDocument);
+
+    ctx.subscriptions.push(
+        vscode.window.createTreeView("perforce.timeline", {
+            treeDataProvider: new TimeLineProvider(ctx),
+        })
+    );
 }
 
 function doOneTimeRegistration() {

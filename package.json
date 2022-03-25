@@ -367,6 +367,14 @@
                     "when": "perforce.activation.hasScmProvider",
                     "icon": "resources/icons/p4view.svg"
                 }
+            ],
+            "explorer": [
+                {
+                    "id": "perforce.timeline",
+                    "name": "Timeline",
+                    "when": "perforce.activation.hasScmProvider",
+                    "contextualTitle": "Changelist of file"
+                }
             ]
         },
         "commands": [
