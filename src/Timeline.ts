@@ -1,6 +1,18 @@
 import * as vscode from "vscode";
 import * as PerforceUri from "./PerforceUri";
 import * as p4 from "./api/commands/filelog";
+import {
+    Uri,
+    EventEmitter,
+    Event,
+    SourceControl,
+    SourceControlResourceGroup,
+    Disposable,
+    ProgressLocation,
+    window,
+    workspace,
+    commands,
+} from "vscode";
 
 function GetIcon(text: string): string {
     switch (text) {
@@ -34,7 +46,7 @@ function GetIcon(text: string): string {
 }
 export class Item extends vscode.TreeItem {
     item: p4.FileLogItem | p4.FileLogIntegration;
-    constructor(item: p4.FileLogItem | p4.FileLogIntegration) {
+    constructor(item: p4.FileLogItem | p4.FileLogIntegration, filename: string) {
         if ("direction" in item) {
             super(`${item.operation}`, vscode.TreeItemCollapsibleState.None);
             this.description = `${item.operation} ${
@@ -47,10 +59,10 @@ export class Item extends vscode.TreeItem {
             } else {
                 super(item.chnum, vscode.TreeItemCollapsibleState.None);
             }
-            this.description = item.description;
+            this.description = `#${item.revision} ${item.description}`;
             this.iconPath = new vscode.ThemeIcon(GetIcon(item.operation));
             this.tooltip = new vscode.MarkdownString(
-                `#${item.revision}-${item.operation} ${item.user} (${item.client})
+                `#${item.revision} ${item.user} (${item.client})
 
 ${item.date}
 
@@ -58,6 +70,25 @@ ${item.date}
 ${item.description}`,
                 true
             );
+            if (item.operation === "edit") {
+                let left = vscode.Uri.file(filename);
+                left = left.with({
+                    scheme: "perforce",
+                    fragment: `${Number.parseInt(item.revision) - 1}`,
+                    authority: `#${Number.parseInt(item.revision) - 1}`,
+                });
+                let right = vscode.Uri.file(filename);
+                right = right.with({
+                    scheme: "perforce",
+                    fragment: `${item.revision}`,
+                    authority: `#${item.revision}`,
+                });
+                this.command = {
+                    title: "Diff with previous revision",
+                    command: "perforce.diffFiles",
+                    arguments: [left, right],
+                };
+            }
         }
         this.item = item;
     }
@@ -75,8 +106,6 @@ export class TimeLineProvider implements vscode.TreeDataProvider<Item> {
         vscode.window.onDidChangeActiveTextEditor((e) => this.onActiveEditorChanged(e));
         vscode.workspace.onDidChangeTextDocument((e) => this.onDocumentChanged(e));
         this.onActiveEditorChanged(vscode.window.activeTextEditor);
-        const aa = vscode.window.activeTextEditor?.document.fileName || "A";
-        vscode.window.showInformationMessage(aa);
     }
 
     onDocumentChanged(e: vscode.TextDocumentChangeEvent): any {
@@ -105,7 +134,7 @@ export class TimeLineProvider implements vscode.TreeDataProvider<Item> {
         if (!element && this.changes) {
             return Promise.resolve(
                 this.changes.map((item) => {
-                    return new Item(item);
+                    return new Item(item, this.uri.path);
                 })
             );
         } else {
@@ -114,7 +143,7 @@ export class TimeLineProvider implements vscode.TreeDataProvider<Item> {
 
                 return Promise.resolve(
                     item.integrations.map((item) => {
-                        return new Item(item);
+                        return new Item(item, this.uri.path);
                     })
                 );
             }
