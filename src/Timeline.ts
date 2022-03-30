@@ -1,23 +1,11 @@
 import * as vscode from "vscode";
 import * as PerforceUri from "./PerforceUri";
 import * as p4 from "./api/commands/filelog";
-import {
-    Uri,
-    EventEmitter,
-    Event,
-    SourceControl,
-    SourceControlResourceGroup,
-    Disposable,
-    ProgressLocation,
-    window,
-    workspace,
-    commands,
-} from "vscode";
 
 function GetIcon(text: string): string {
     switch (text) {
         case "add":
-            return "add";
+            return "file-add";
         case "archive":
             return "archive";
         case "branch":
@@ -27,7 +15,7 @@ function GetIcon(text: string): string {
         case "edit":
             return "edit";
         case "integrate":
-            return "testing-queued-icon";
+            return "merge";
         case "import":
             return "testing-run-all-icon";
         case "lock":
@@ -40,6 +28,8 @@ function GetIcon(text: string): string {
             return "testing-debug-icon";
         case "copy":
             return "explorer-view-icon";
+        case "move":
+            return "references";
         default:
             return "git-commit";
     }
@@ -108,7 +98,7 @@ export class TimeLineProvider implements vscode.TreeDataProvider<Item> {
         this.onActiveEditorChanged(vscode.window.activeTextEditor);
     }
 
-    onDocumentChanged(e: vscode.TextDocumentChangeEvent): any {
+    onDocumentChanged(_e: vscode.TextDocumentChangeEvent): any {
         throw new Error("Method not implemented.");
     }
     async onActiveEditorChanged(editor: vscode.TextEditor | undefined): Promise<any> {
